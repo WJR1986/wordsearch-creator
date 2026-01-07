@@ -242,19 +242,6 @@ function updateWordsLabel() {
   if (wordsLabelEl) wordsLabelEl.textContent = `${n} words`;
 }
 
-function defaultSizeForDifficulty() {
-  // Easy: 14, Medium: 16 (you can tweak these later)
-  if (!difficultyEl) return 14;
-  return difficultyEl.value === "medium" ? 16 : 14;
-}
-
-function bumpSizes(startSize) {
-  // Build a list of sizes to try, in order, without duplicates
-  const candidates = [startSize, 16, 18];
-  return [...new Set(candidates)].filter((n) => n >= 12 && n <= 18);
-}
-
-
 // NEW: keep print header in sync without regenerating the grid
 function updateMeta() {
   const title = (titleEl?.value || "").trim();
@@ -310,14 +297,11 @@ function build() {
 
   const title = (titleEl.value || "").trim();
   const author = (authorEl.value || "").trim();
-
+  const size = parseInt(sizeEl.value, 10);
   const allowDiagonals = diagonalsEl.value === "1";
   const words = getWordsFromForm();
 
-  // Use the currently selected size (but we may auto-bump if needed)
-  let startSize = parseInt(sizeEl.value, 10);
-
-  const err = validate(words, startSize);
+  const err = validate(words, size);
   if (err) {
     formMsg.textContent = err;
     lastPayload = null;
@@ -329,52 +313,14 @@ function build() {
 
   formMsg.textContent = "Generating…";
 
-  // Try current size, then bump if needed
-  let finalResult = null;
-  let finalSize = startSize;
+  const result = generateWordsearch(words, size, allowDiagonals);
+  render(result, title, author, words);
 
-  const sizesToTry = bumpSizes(startSize);
+  lastPayload = { title, author, size, allowDiagonals, words };
 
-  for (const trySize of sizesToTry) {
-    // If a longer word than grid size exists, don't even try
-    const tooLong = words.find((w) => w.length > trySize);
-    if (tooLong) continue;
-
-    const result = generateWordsearch(words, trySize, allowDiagonals);
-
-    // If everything placed, accept it
-    if (!result.failed.length) {
-      finalResult = result;
-      finalSize = trySize;
-      break;
-    }
-
-    // Otherwise keep the best attempt so far (in case all fail)
-    if (!finalResult || result.failed.length < finalResult.failed.length) {
-      finalResult = result;
-      finalSize = trySize;
-    }
-  }
-
-  // Update the grid size dropdown to what we ended up using
-  if (String(sizeEl.value) !== String(finalSize)) {
-    sizeEl.value = String(finalSize);
-  }
-
-  render(finalResult, title, author, words);
-
-  lastPayload = { title, author, size: finalSize, allowDiagonals, words };
-
-  // Message
-  if (finalResult.failed.length) {
-    formMsg.textContent =
-      `Generated, but ${finalResult.failed.length} word(s) couldn’t be placed. ` +
-      `Try 18×18, shorten the longest word, or allow diagonals.`;
-  } else if (finalSize !== startSize) {
-    formMsg.textContent = `Generated. (Auto-switched to ${finalSize}×${finalSize} to fit everything.)`;
-  } else {
-    formMsg.textContent = "Generated.";
-  }
+  formMsg.textContent = result.failed.length
+    ? "Generated (with issues—see warning)."
+    : "Generated.";
 
   shuffleBtn.disabled = false;
   printBtn.disabled = false;
@@ -416,17 +362,9 @@ toggleKeyBtn.addEventListener("click", () => {
 if (difficultyEl) {
   difficultyEl.addEventListener("change", () => {
     updateWordsLabel();
-
-    // Set sensible default grid size for the difficulty
-    const suggested = defaultSizeForDifficulty();
-    if (sizeEl && sizeEl.value !== String(suggested)) {
-      sizeEl.value = String(suggested);
-    }
-
     build();
   });
 }
-
 
 // NEW: live-update print header as you type (no regeneration)
 if (titleEl) titleEl.addEventListener("input", updateMeta);
@@ -448,10 +386,4 @@ wordsEl.value = [
 
 updateWordsLabel();
 updateMeta();
-
-// Set initial size based on difficulty
-if (difficultyEl && sizeEl) {
-  sizeEl.value = String(defaultSizeForDifficulty());
-}
-
 build();
