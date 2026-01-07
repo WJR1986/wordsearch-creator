@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Wordsearch Creator</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+
+<body class="answer-key-hidden">
+  <header class="site-header">
+    <div class="site-header__inner">
+      <div class="brand">
+        <div class="brand__icon" aria-hidden="true">🔎</div>
+        <div class="brand__text">
+          <h1>Will's Wordsearch Creator</h1>
+          <p>Enter a title, author and 10/15 words — generate a printable wordsearch + optional answer key.</p>
+        </div>
+      </div>
+
+      <div class="site-header__meta">
+        <span class="pill">GitHub Pages friendly</span>
+        <span class="pill pill--ghost">Print-ready</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="card controls-card">
+      <h2 class="panel-title">Create</h2>
+
+<label for="title">Title</label>
+<input id="title" placeholder="e.g., Staying Safe Over Christmas" maxlength="60" />
+
+<label for="author">Author</label>
+<input id="author" placeholder="e.g., Will (DART)" maxlength="60" />
+
+      <label for="difficulty">Difficulty</label>
+      <select id="difficulty">
+        <option value="easy" selected>Easy (10 words)</option>
+        <option value="medium">Medium (15 words)</option>
+      </select>
+
+      <div class="row">
+        <div>
+          <label for="size">Grid size</label>
+          <select id="size">
+            <option value="12">12 × 12</option>
+            <option value="14" selected>14 × 14</option>
+            <option value="16">16 × 16</option>
+            <option value="18">18 × 18</option>
+          </select>
+        </div>
+        <div>
+          <label for="allowDiagonals">Directions</label>
+          <select id="allowDiagonals">
+            <option value="0">Horizontal + Vertical</option>
+            <option value="1" selected>+ Diagonal</option>
+          </select>
+        </div>
+      </div>
+
+      <label for="words"><span id="wordsLabel">10 words</span> (one per line)</label>
+      <textarea id="words"></textarea>
+
+      <div class="btns">
+        <button id="generateBtn">Generate</button>
+        <button id="shuffleBtn" class="secondary" disabled>Shuffle</button>
+        <button id="printBtn" class="secondary" disabled>Print</button>
+      </div>
+
+      <div class="btns" style="margin-top:10px;">
+        <button id="toggleKeyBtn" class="secondary" disabled>Show answer key</button>
+      </div>
+
+      <div id="formMsg" class="status"></div>
+
+      <div class="hint">
+        Tips:
+        <ul>
+          <li>Words are cleaned to A–Z (spaces removed). Try to keep them &lt; grid size.</li>
+          <li>If it can’t fit all words, increase grid size or shorten the longest word.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="card">
+      <div id="output" class="print-area">
+        <div class="meta">
+          <div>
+            <h2 id="outTitle">Your Wordsearch</h2>
+            <div class="by" id="outAuthor"></div>
+          </div>
+          <div class="by" id="outDate"></div>
+        </div>
+
+        <div class="grid-and-words">
+          <div>
+            <div id="grid" class="grid" aria-label="Wordsearch grid"></div>
+            <div id="warn" class="warn" style="display:none;"></div>
+          </div>
+
+          <aside class="wordlist">
+            <h3>Find these words</h3>
+            <ul id="wordList"></ul>
+            <div class="status" style="margin-top:10px;">
+              Answer key/list shows the correct words in the grid.
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>
