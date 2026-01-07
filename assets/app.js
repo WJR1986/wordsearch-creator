@@ -55,11 +55,9 @@ function generateWordsearch(words, size, allowDiagonals) {
 
   // Place longer words first
   const sorted = [...words].sort((a, b) => b.length - a.length);
-
   const placements = [];
 
-  // Helper: is any neighbour cell occupied by ANY word?
-  // (8-direction adjacency)
+  // Helper: is any neighbour cell occupied by ANY word? (8-direction adjacency)
   function hasAdjacentOccupied(xx, yy) {
     for (let ny = yy - 1; ny <= yy + 1; ny++) {
       for (let nx = xx - 1; nx <= xx + 1; nx++) {
@@ -83,12 +81,10 @@ function generateWordsearch(words, size, allowDiagonals) {
       // If there's already a letter here, only allow if it matches (overlap/crossing)
       if (existing !== null) {
         if (existing !== word[i]) return false;
-        // Overlap is allowed (even though neighbours may be occupied)
-        continue;
+        continue; // overlap allowed
       }
 
-      // If it's an empty cell, enforce spacing:
-      // reject if this cell touches any existing placed letter
+      // Empty cell: enforce spacing (no touching, including diagonals)
       if (hasAdjacentOccupied(xx, yy)) return false;
     }
 
@@ -101,11 +97,9 @@ function generateWordsearch(words, size, allowDiagonals) {
       const xx = x + dx * i;
       const yy = y + dy * i;
 
-      // Write letter
       grid[yy][xx] = word[i];
       mark[yy][xx] = true;
 
-      // Only set owner if empty previously (don’t overwrite owner on overlaps)
       if (owner[yy][xx] === null) owner[yy][xx] = wordIndex;
 
       cells.push([xx, yy]);
@@ -113,14 +107,13 @@ function generateWordsearch(words, size, allowDiagonals) {
     placements.push({ word, cells });
   }
 
-  // Try placing each word with random attempts
   const failed = [];
 
   for (let wi = 0; wi < sorted.length; wi++) {
     const word = sorted[wi];
     let placed = false;
 
-    // More attempts needed because spacing is stricter
+    // More attempts because spacing is stricter
     const attempts = 2000;
 
     for (let a = 0; a < attempts; a++) {
@@ -128,7 +121,6 @@ function generateWordsearch(words, size, allowDiagonals) {
       const dx = dir.dx;
       const dy = dir.dy;
 
-      // Choose a start that could fit
       const xMin = dx === -1 ? word.length - 1 : 0;
       const xMax = dx === 1 ? size - word.length : size - 1;
       const yMin = dy === -1 ? word.length - 1 : 0;
@@ -187,7 +179,7 @@ function render(result, title, author, words) {
       const d = document.createElement("div");
       d.className = "cell";
       d.textContent = result.grid[y][x];
-      if (result.mark[y][x]) d.classList.add("mark"); // answer key highlight
+      if (result.mark[y][x]) d.classList.add("mark");
       gridEl.appendChild(d);
     }
   }
@@ -254,6 +246,27 @@ function updateMeta() {
   if (outAuthor) outAuthor.textContent = author ? `By ${author}` : "";
 }
 
+// NEW: temporarily disable small grid sizes and force default 16
+function applyGridSizePolicy() {
+  if (!sizeEl) return;
+
+  // Disable 12 and 14 temporarily
+  Array.from(sizeEl.options).forEach((opt) => {
+    const v = parseInt(opt.value, 10);
+    if (v === 12 || v === 14) {
+      opt.disabled = true;
+    } else {
+      opt.disabled = false;
+    }
+  });
+
+  // If current value is disabled or empty, force 16
+  const current = parseInt(sizeEl.value, 10);
+  if (!current || current === 12 || current === 14) {
+    sizeEl.value = "16";
+  }
+}
+
 function getWordsFromForm() {
   const rawLines = wordsEl.value
     .split(/\r?\n/)
@@ -292,6 +305,7 @@ function validate(words, size) {
 }
 
 function build() {
+  applyGridSizePolicy();
   updateWordsLabel();
   updateMeta();
 
@@ -342,7 +356,6 @@ shuffleBtn.addEventListener("click", () => {
 });
 
 printBtn.addEventListener("click", () => {
-  // Ensure the print header reflects what’s currently typed
   updateMeta();
   window.print();
 });
@@ -358,15 +371,16 @@ toggleKeyBtn.addEventListener("click", () => {
   }
 });
 
-// NEW: update label + optionally rebuild when difficulty changes
 if (difficultyEl) {
   difficultyEl.addEventListener("change", () => {
     updateWordsLabel();
+    // keep policy for now: 16 default always
+    applyGridSizePolicy();
     build();
   });
 }
 
-// NEW: live-update print header as you type (no regeneration)
+// Live-update print header as you type
 if (titleEl) titleEl.addEventListener("input", updateMeta);
 if (authorEl) authorEl.addEventListener("input", updateMeta);
 
@@ -384,6 +398,8 @@ wordsEl.value = [
   "HOPE",
 ].join("\n");
 
+// Initialise
+applyGridSizePolicy();
 updateWordsLabel();
 updateMeta();
 build();
