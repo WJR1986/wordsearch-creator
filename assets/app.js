@@ -31,6 +31,11 @@ function generateWordsearch(words, size, allowDiagonals) {
     Array.from({ length: size }, () => false)
   );
 
+  // Track which word "owns" each cell (for spacing rules)
+  const owner = Array.from({ length: size }, () =>
+    Array.from({ length: size }, () => null) // null or wordIndex number
+  );
+
   // Directions
   const dirs = [
     { dx: 1, dy: 0 },  // →
@@ -53,7 +58,20 @@ function generateWordsearch(words, size, allowDiagonals) {
 
   const placements = [];
 
-  function canPlace(word, x, y, dx, dy) {
+  // Helper: is any neighbour cell occupied by ANY word?
+  // (8-direction adjacency)
+  function hasAdjacentOccupied(xx, yy) {
+    for (let ny = yy - 1; ny <= yy + 1; ny++) {
+      for (let nx = xx - 1; nx <= xx + 1; nx++) {
+        if (nx === xx && ny === yy) continue;
+        if (nx < 0 || nx >= size || ny < 0 || ny >= size) continue;
+        if (grid[ny][nx] !== null) return true;
+      }
+    }
+    return false;
+  }
+
+  function canPlace(word, x, y, dx, dy, wordIndex) {
     for (let i = 0; i < word.length; i++) {
       const xx = x + dx * i;
       const yy = y + dy * i;
@@ -61,19 +79,35 @@ function generateWordsearch(words, size, allowDiagonals) {
       if (xx < 0 || xx >= size || yy < 0 || yy >= size) return false;
 
       const existing = grid[yy][xx];
-      if (existing !== null && existing !== word[i]) return false;
+
+      // If there's already a letter here, only allow if it matches (overlap/crossing)
+      if (existing !== null) {
+        if (existing !== word[i]) return false;
+        // Overlap is allowed (even though neighbours may be occupied)
+        continue;
+      }
+
+      // If it's an empty cell, enforce spacing:
+      // reject if this cell touches any existing placed letter
+      if (hasAdjacentOccupied(xx, yy)) return false;
     }
+
     return true;
   }
 
-  function doPlace(word, x, y, dx, dy) {
+  function doPlace(word, x, y, dx, dy, wordIndex) {
     const cells = [];
     for (let i = 0; i < word.length; i++) {
       const xx = x + dx * i;
       const yy = y + dy * i;
 
+      // Write letter
       grid[yy][xx] = word[i];
       mark[yy][xx] = true;
+
+      // Only set owner if empty previously (don’t overwrite owner on overlaps)
+      if (owner[yy][xx] === null) owner[yy][xx] = wordIndex;
+
       cells.push([xx, yy]);
     }
     placements.push({ word, cells });
@@ -82,11 +116,12 @@ function generateWordsearch(words, size, allowDiagonals) {
   // Try placing each word with random attempts
   const failed = [];
 
-  for (const word of sorted) {
+  for (let wi = 0; wi < sorted.length; wi++) {
+    const word = sorted[wi];
     let placed = false;
 
-    // Cap attempts to keep it fast
-    const attempts = 400;
+    // More attempts needed because spacing is stricter
+    const attempts = 2000;
 
     for (let a = 0; a < attempts; a++) {
       const dir = choice(dirs);
@@ -102,8 +137,8 @@ function generateWordsearch(words, size, allowDiagonals) {
       const x = randInt(xMax - xMin + 1) + xMin;
       const y = randInt(yMax - yMin + 1) + yMin;
 
-      if (canPlace(word, x, y, dx, dy)) {
-        doPlace(word, x, y, dx, dy);
+      if (canPlace(word, x, y, dx, dy, wi)) {
+        doPlace(word, x, y, dx, dy, wi);
         placed = true;
         break;
       }
