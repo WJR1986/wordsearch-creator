@@ -316,7 +316,7 @@ toggleKeyBtn.addEventListener("click", () => {
   const isHidden = document.body.classList.contains("answer-key-hidden");
   if (isHidden) {
     document.body.classList.remove("answer-key-hidden");
-    toggleKeyBtn.textContent = "Hide answer key";
+    toggleKeyBtn.textContent = "Hide answer key (work in progress)";
   } else {
     document.body.classList.add("answer-key-hidden");
     toggleKeyBtn.textContent = "Show answer key";
